@@ -30,8 +30,11 @@ func generateRandomElements(size int) []int {
 // maximum returns the maximum number of elements.
 func maximum(data []int) int {
 	// ваш код здесь
-	if len(data) == 0 || len(data) == 1 {
+	if len(data) == 0 {
 		return 0
+	}
+	if len(data) == 1 {
+		return data[0]
 	}
 	max := slices.Max(data)
 	return max
@@ -41,22 +44,29 @@ func maximum(data []int) int {
 func maxChunks(data []int) int {
 	// ваш код здесь
 	var wg sync.WaitGroup
-	var finalSlice []int
+	finalSlice := make([]int, CHUNKS)
+	sizeSrez := len(data) / CHUNKS
+	residue := len(data) % CHUNKS
 	for i := 0; i < CHUNKS; i++ {
-		sizeSrez := len(data) / CHUNKS
-		initialIndex := i * sizeSrez
-		finalIndex := initialIndex + sizeSrez
-		srez := data[initialIndex:finalIndex]
+		start := i * sizeSrez
+		if i < residue {
+			start += i
+		} else {
+			start += residue
+		}
+		final := start + sizeSrez
+		if i < residue {
+			final += 1
+		}
 		wg.Add(1)
-		go func() {
+		go func(i, start, final int) {
 			defer wg.Done()
-			max := slices.Max(srez)
-			finalSlice = append(finalSlice, max)
-		}()
+			srez := data[start:final]
+			finalSlice[i] = maximum(srez)
+		}(i, start, final)
 	}
 	wg.Wait()
-	result := slices.Max(finalSlice)
-	return result
+	return maximum(finalSlice)
 }
 
 func main() {
@@ -67,17 +77,13 @@ func main() {
 	// ваш код здесь
 	startTime := time.Now()
 	max := maximum(data)
-	endTime := time.Now()
-	duration := endTime.Sub(startTime)
-	elapsed := duration.Microseconds()
+	elapsed := time.Since(startTime)
 	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", max, elapsed)
 
 	fmt.Printf("Ищем максимальное значение в %d потоков\n", CHUNKS)
 	// ваш код здесь
 	startTime = time.Now()
 	max = maxChunks(data)
-	endTime = time.Now()
-	duration = endTime.Sub(startTime)
-	elapsed = duration.Microseconds()
+	elapsed = time.Since(startTime)
 	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", max, elapsed)
 }
